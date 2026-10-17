@@ -1,0 +1,7 @@
+-r requirements.txt
+# Install Resemblyzer separately with --no-deps after this file (Windows).
+webrtcvad-wheels>=2.0.14
+librosa>=0.10,<1
+torch>=2.2,<3
+tqdm>=4.66,<5
+faster-whisper>=1.1,<2
