@@ -6,7 +6,7 @@ class AnalysisOptions(BaseModel):
     modele: Literal["tiny","base","small"] = "base"
     langue: Literal["fr","en","ar","es","auto"] = "fr"
     fenetre: float = Field(3., ge=1, le=10)
-    seuil: float = Field(.75,ge=0,le=1)
+    seuil: float = Field(.68,ge=0,le=1)
     ecart: float = Field(.05,ge=0,le=1)
     classification: bool = True
     sound_threshold: float = Field(.3,ge=0,le=1)

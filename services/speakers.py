@@ -55,8 +55,12 @@ def identify(wav, cents, threshold, margin):
     if len(wav) >= 48000:
         vectors += [embed(part) for part in np.array_split(wav, len(wav)//24000)]
     all_scores = [{n: float(np.clip(np.dot(v,c), -1,1)) for n,c in cents.items()} for v in vectors]
-    who, reason = decision(all_scores[0], threshold, margin)
-    local = [decision(s, threshold, margin)[0] for s in all_scores[1:]]
+    # With one enrolled speaker there is no competing profile, so a noisy
+    # microphone should not turn a clearly isolated voice into "Inconnu".
+    # Keep a floor to avoid accepting arbitrary VAD speech as that profile.
+    effective_threshold = max(.65, threshold - .07) if len(cents) == 1 else threshold
+    who, reason = decision(all_scores[0], effective_threshold, margin)
+    local = [decision(s, effective_threshold, margin)[0] for s in all_scores[1:]]
     if local and any(n != who for n in local):
         who, reason = "Indéterminé", "attribution instable ou plusieurs voix possibles"
     elif not local and reason is None:

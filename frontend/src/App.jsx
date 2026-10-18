@@ -47,7 +47,7 @@ const defaults = {
   modele: "base",
   langue: "fr",
   fenetre: 3,
-  seuil: 0.75,
+  seuil: 0.68,
   ecart: 0.05,
   classification: true,
   sound_threshold: 0.3,
