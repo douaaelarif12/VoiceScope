@@ -8,6 +8,7 @@ import {
   ChartNoAxesCombined,
   FileDown,
   Settings,
+  CalendarDays,
   Play,
   Trash2,
   ShieldCheck,
@@ -38,6 +39,7 @@ const navigation = [
   ["Transcription", MessageSquare],
   ["Analytics", ChartNoAxesCombined],
   ["Reports", FileDown],
+  ["Schedule", CalendarDays],
   ["Settings", Settings],
 ];
 const defaults = {
@@ -71,6 +73,14 @@ export default function App() {
     [notice, setNotice] = useState(null),
     [history, setHistory] = useState([]),
     [selected, setSelected] = useState(0);
+  const [schedule, setSchedule] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("voicescope-schedule") || "[]"); }
+    catch { return []; }
+  });
+  const [selectedSchedule, setSelectedSchedule] = useState("");
+  const [scheduleDraft, setScheduleDraft] = useState({
+    professeur: "", classe: "", matiere: "", salle: "", jour: "Lundi", debut: "08:00", fin: "09:00",
+  });
   const [options, setOptions] = useState(() => {
     try {
       return {
@@ -102,6 +112,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("voicescope-settings", JSON.stringify(options));
   }, [options]);
+  useEffect(() => {
+    localStorage.setItem("voicescope-schedule", JSON.stringify(schedule));
+  }, [schedule]);
   const run = async (action) => {
     setBusy(true);
     setNotice(null);
@@ -115,7 +128,17 @@ export default function App() {
   };
   const analyse = () =>
     run(async () => {
-      const r = await api.analyser(audio, options);
+      const context = schedule.find((s) => s.id === selectedSchedule);
+      const r = await api.analyser(audio, {
+        ...options,
+        ...(context ? {
+          professeur: context.professeur,
+          classe: context.classe,
+          matiere: context.matiere,
+          salle: context.salle,
+          seance: `${context.jour} ${context.debut}–${context.fin}`,
+        } : {}),
+      });
       setResult(r);
       setSelected(0);
       setPage("Overview");
@@ -131,6 +154,11 @@ export default function App() {
       setVoice(null);
       setNotice({ text: `Échantillon ajouté pour ${r.nom}.` });
     });
+  const addSchedule = () => {
+    if (!scheduleDraft.professeur.trim() || !scheduleDraft.classe.trim() || !scheduleDraft.matiere.trim()) return;
+    setSchedule([...schedule, { ...scheduleDraft, id: crypto.randomUUID() }]);
+    setScheduleDraft({ ...scheduleDraft, professeur: "", classe: "", matiere: "", salle: "" });
+  };
   const a = result?.acoustics,
     frame = result?.niveaux[selected];
   const traffic = frame
@@ -325,6 +353,44 @@ export default function App() {
             {w}
           </div>
         ))}
+        {page === "Schedule" && (
+          <>
+            <section className="card">
+              <h2>Ajouter une séance à l’emploi du temps</h2>
+              <p className="hint">Ces informations sont facultatives et restent dans votre navigateur.</p>
+              <div className="settings-grid">
+                {[["professeur", "Professeur"], ["classe", "Classe"], ["matiere", "Matière"], ["salle", "Salle"]].map(([key, label]) => (
+                  <label className="field" key={key}>{label}
+                    <input value={scheduleDraft[key]} onChange={(e) => setScheduleDraft({ ...scheduleDraft, [key]: e.target.value })} placeholder={label} />
+                  </label>
+                ))}
+                <label className="field">Jour
+                  <select value={scheduleDraft.jour} onChange={(e) => setScheduleDraft({ ...scheduleDraft, jour: e.target.value })}>
+                    {["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"].map((d) => <option key={d}>{d}</option>)}
+                  </select>
+                </label>
+                <label className="field">Début
+                  <input type="time" value={scheduleDraft.debut} onChange={(e) => setScheduleDraft({ ...scheduleDraft, debut: e.target.value })} />
+                </label>
+                <label className="field">Fin
+                  <input type="time" value={scheduleDraft.fin} onChange={(e) => setScheduleDraft({ ...scheduleDraft, fin: e.target.value })} />
+                </label>
+              </div>
+              <button className="btn primary" onClick={addSchedule}>Ajouter la séance</button>
+            </section>
+            <section className="card">
+              <h2>Mes séances</h2>
+              {!schedule.length && <p className="empty-text">Aucune séance enregistrée.</p>}
+              {schedule.map((s) => (
+                <div className="schedule-row" key={s.id}>
+                  <div><strong>{s.matiere}</strong><span>{s.classe} · {s.professeur} · {s.salle || "Salle non précisée"}</span></div>
+                  <div><b>{s.jour}</b> {s.debut}–{s.fin}</div>
+                  <button className="link" onClick={() => setSchedule(schedule.filter((x) => x.id !== s.id))}><Trash2 size={15} /> Supprimer</button>
+                </div>
+              ))}
+            </section>
+          </>
+        )}
         {page === "Voice Profiles" && (
           <>
             <div className="section-title">
@@ -424,6 +490,13 @@ export default function App() {
                 Enregistrez une séance ou importez un fichier audio. Maximum : 5
                 minutes / 32 Mio.
               </p>
+              <label className="field">
+                Séance associée <span className="hint">(optionnel)</span>
+                <select value={selectedSchedule} onChange={(e) => setSelectedSchedule(e.target.value)}>
+                  <option value="">Analyse libre, sans emploi du temps</option>
+                  {schedule.map((s) => <option value={s.id} key={s.id}>{s.jour} {s.debut} · {s.matiere} · {s.classe}</option>)}
+                </select>
+              </label>
               <AudioInput value={audio} onChange={setAudio} />
               <button
                 className="btn primary"

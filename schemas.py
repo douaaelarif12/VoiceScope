@@ -13,6 +13,11 @@ class AnalysisOptions(BaseModel):
     moderate_dbfs: float = Field(-35,ge=-120,le=0)
     high_dbfs: float = Field(-20,ge=-120,le=0)
     alert_seconds: float = Field(3,ge=.25,le=60)
+    professeur: str | None = Field(None, max_length=80)
+    classe: str | None = Field(None, max_length=80)
+    matiere: str | None = Field(None, max_length=80)
+    salle: str | None = Field(None, max_length=80)
+    seance: str | None = Field(None, max_length=120)
 
     @model_validator(mode="after")
     def thresholds(self):

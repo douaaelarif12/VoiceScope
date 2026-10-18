@@ -819,6 +819,19 @@ footer { color: #64748b; }
 }
 .noise-leader strong { color: #26245f; font-size: 22px; }
 .noise-leader span { color: #64748b; font-size: 12px; }
+.schedule-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) auto auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.schedule-row > div { display: flex; flex-direction: column; gap: 5px; }
+.schedule-row span, .schedule-row > div:nth-child(2) { color: var(--muted); font-size: 12px; }
+@media (max-width: 760px) {
+  .schedule-row { grid-template-columns: 1fr; gap: 8px; }
+}
 
 /* VoiceScope signature theme: an editorial sound studio, instead of a generic dashboard. */
 :root {

@@ -70,7 +70,10 @@ def decode(upload):
 def analysis_options(stt: bool=Form(True),modele: str=Form("base"),langue: str=Form("fr"),
                      fenetre: float=Form(3),seuil: float=Form(.75),ecart: float=Form(.05),
                      classification: bool=Form(True),sound_threshold: float=Form(.3),
-                     moderate_dbfs: float=Form(-35),high_dbfs: float=Form(-20),alert_seconds: float=Form(3)):
+                     moderate_dbfs: float=Form(-35),high_dbfs: float=Form(-20),alert_seconds: float=Form(3),
+                     professeur: str | None=Form(None),classe: str | None=Form(None),
+                     matiere: str | None=Form(None),salle: str | None=Form(None),
+                     seance: str | None=Form(None)):
     try:
         return AnalysisOptions(**locals())
     except ValidationError as exc:
