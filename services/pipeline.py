@@ -17,7 +17,9 @@ def analyse(wav, store, options):
         warnings.append("VAD indisponible : aucun temps de parole estimé sans détection vocale.")
     if options.stt and acoustic["dbfs"] > -75:
         try:
-            transcript, detected = transcription.transcribe(wav, options.modele, options.langue)
+            transcript, detected = transcription.transcribe(
+                wav, options.modele, options.langue, regions=regions
+            )
         except Exception:
             warnings.append("Transcription indisponible : vérifier faster-whisper et le téléchargement du modèle.")
     cents = store.centroids()
