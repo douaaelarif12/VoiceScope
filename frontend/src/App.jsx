@@ -143,6 +143,7 @@ export default function App() {
   const dominantSpeaker = result?.statistics
     .filter((s) => !["Inconnu", "Indéterminé"].includes(s.nom))
     .sort((x, y) => y.secondes - x.secondes)[0]?.nom;
+  const noiseLeader = result?.locuteur_bruit_principal;
   const empty = (
     <div className="empty">
       <AudioLines size={40} />
@@ -463,7 +464,7 @@ export default function App() {
                 ["Niveau moyen", number(a?.dbfs, " dBFS")],
                 ["Fréquence dominante", number(a?.dominant_hz, " Hz", 0)],
                 ["Profils vocaux", `${people.length} / 3`],
-                ["Locuteur principal", dominantSpeaker || "—"],
+                ["Voix la plus sonore", noiseLeader || dominantSpeaker || "—"],
                 ["Durée analysée", result ? clock(result.duree) : "—"],
                 [
                   "Dépassements durables",
@@ -597,6 +598,23 @@ export default function App() {
               <>
                 <div className="two-col">
                   <section className="card">
+                    <h2>Qui produit le plus de bruit vocal ?</h2>
+                    <div className="noise-leader">
+                      <strong>{result.locuteur_bruit_principal || "Aucun profil identifié"}</strong>
+                      {result.locuteur_bruit_principal && (() => {
+                        const leader = result.statistics.find(
+                          (s) => s.nom === result.locuteur_bruit_principal,
+                        );
+                        return leader ? (
+                          <span>
+                            {number(leader.part_bruit, " % de l’énergie vocale")} · moyenne {number(leader.niveau_moyen_dbfs, " dBFS")}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
+                    <p className="hint">
+                      Estimation basée sur l’énergie des segments attribués à chaque profil vocal.
+                    </p>
                     <h2>Temps de parole estimé</h2>
                     <Participation data={result.statistics} />
                     <div className="table-wrap">
@@ -607,6 +625,7 @@ export default function App() {
                             <th>Durée</th>
                             <th>Participation</th>
                             <th>Prises</th>
+                            <th>Énergie vocale</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -616,6 +635,7 @@ export default function App() {
                               <td>{number(s.secondes, " s")}</td>
                               <td>{number(s.participation, " %")}</td>
                               <td>{s.prises}</td>
+                              <td>{number(s.part_bruit, " %")}</td>
                             </tr>
                           ))}
                         </tbody>

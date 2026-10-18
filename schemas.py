@@ -56,6 +56,9 @@ class Statistic(BaseModel):
     secondes: float
     prises: int
     participation: float
+    niveau_moyen_dbfs: float = -120
+    pic_dbfs: float = -120
+    part_bruit: float = 0
 
 class SoundEvent(BaseModel):
     debut: float
@@ -82,6 +85,7 @@ class AnalysisResult(BaseModel):
     niveaux: list[Level]
     acoustics: AcousticData
     statistics: list[Statistic]
+    locuteur_bruit_principal: str | None = None
     events: list[SoundEvent]
     alerts: list[Alert]
     options: AnalysisOptions

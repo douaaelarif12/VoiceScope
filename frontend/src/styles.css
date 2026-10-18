@@ -808,6 +808,17 @@ input[type="range"], input[type="checkbox"] { accent-color: #4f46e5; }
 .report { background: #ffffff; border-color: #dbe3ef; color: #1e293b; }
 .report:hover { border-color: #4f46e5; }
 footer { color: #64748b; }
+.noise-leader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: linear-gradient(110deg, #fff1ed, #f0edff);
+  border: 1px solid #f2d9e0;
+}
+.noise-leader strong { color: #26245f; font-size: 22px; }
+.noise-leader span { color: #64748b; font-size: 12px; }
 
 /* VoiceScope signature theme: an editorial sound studio, instead of a generic dashboard. */
 :root {

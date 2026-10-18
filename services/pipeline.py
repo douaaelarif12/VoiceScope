@@ -1,3 +1,4 @@
+import math
 import time
 from datetime import datetime, timezone
 from collections import defaultdict
@@ -45,16 +46,30 @@ def analyse(wav, store, options):
         item["raison"] = ("attribution estimée : chevauchement non vérifiable sur les segments courts" if any(r["raison"] for r in overlaps) else None) if stable and item["locuteur"] not in ("Inconnu","Indéterminé") else "attribution incertaine, parole mixte ou insuffisante"
         item["scores"] = overlaps[0]["scores"] if stable and len(overlaps)==1 else None
         item["dbfs"] = dbfs(wav[int(item["debut"]*SR):int(item["fin"]*SR)])
-    statistics = defaultdict(lambda:{"secondes":0.,"prises":0})
+    statistics = defaultdict(lambda:{"secondes":0.,"prises":0,"energie":0.,"pic_dbfs":-120.})
     previous = None
     for r in rows:
         name = r["locuteur"]
-        statistics[name]["secondes"] += r["fin"]-r["debut"]
+        seconds = r["fin"]-r["debut"]
+        statistics[name]["secondes"] += seconds
+        # dBFS is logarithmic: compare linear power, then convert back to dBFS.
+        statistics[name]["energie"] += seconds * (10 ** (r["dbfs"] / 10))
+        statistics[name]["pic_dbfs"] = max(statistics[name]["pic_dbfs"], r["dbfs"])
         if previous is None or previous["locuteur"]!=name or r["debut"]-previous["fin"]>.3:
             statistics[name]["prises"] += 1
         previous = r
     total = sum(v["secondes"] for v in statistics.values())
-    stats = [{"nom":n,**v,"participation":100*v["secondes"]/total if total else 0} for n,v in statistics.items()]
+    total_energy = sum(v["energie"] for v in statistics.values())
+    stats = []
+    for name, value in statistics.items():
+        avg_dbfs = 10 * math.log10(max(value["energie"] / max(value["secondes"], 1e-9), 1e-12))
+        stats.append({"nom":name,"secondes":value["secondes"],"prises":value["prises"],
+                      "participation":100*value["secondes"]/total if total else 0,
+                      "niveau_moyen_dbfs":avg_dbfs,
+                      "pic_dbfs":value["pic_dbfs"],
+                      "part_bruit":100*value["energie"]/total_energy if total_energy else 0})
+    known_stats = [s for s in stats if s["nom"] not in ("Inconnu", "Indéterminé")]
+    bruit_principal = max(known_stats, key=lambda s: s["part_bruit"])["nom"] if known_stats else None
     events, classifier = [], "désactivé"
     if options.classification:
         try:
@@ -68,8 +83,9 @@ def analyse(wav, store, options):
             "warnings":warnings,"segments":rows,"transcriptions":transcript,
             "niveaux":acoustic["niveaux"],"acoustics":acoustic,"statistics":stats,
             "events":events,"alerts":alerts(acoustic["niveaux"], options.moderate_dbfs, options.high_dbfs, options.alert_seconds),
+            "locuteur_bruit_principal":bruit_principal,
             "options":options.model_dump(),"profiles":store.list(),"vad":vad_method,"classifier":classifier,
             "processing_seconds":time.perf_counter()-started,
             "limitations":["Similarités cosinus non calibrées.","dBFS numériques : aucune mesure dB SPL.",
-                            "Chevauchement des voix non résolu ; les mélanges stables peuvent échapper à la détection.",
+                            "La voix la plus sonore est une estimation basée sur l'énergie des segments attribués ; un bruit non vocal reste classé séparément.",
                             "Temps de parole estimé par VAD, participation incluant les voix inconnues."]}
