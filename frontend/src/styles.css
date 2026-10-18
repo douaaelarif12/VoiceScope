@@ -766,3 +766,45 @@ footer {
     animation: none !important;
   }
 }
+
+/* Light visual theme: bright workspace with blue and violet accents. */
+:root {
+  color: #1f2937;
+  background: #f5f7fb;
+  color-scheme: light;
+  --muted: #64748b;
+  --line: #dbe3ef;
+  --cyan: #2563eb;
+  --primary: #4f46e5;
+}
+body { background: #f5f7fb; }
+.sidebar { background: #ffffff; }
+.brand b { background: #eef2ff; color: #4338ca; }
+.brand-icon { background: #4f46e5; }
+nav button { color: #64748b; }
+nav button.active { background: #eef2ff; color: #3730a3; box-shadow: inset 3px 0 #4f46e5; }
+nav button:hover { background: #f1f5f9; }
+.privacy { background: linear-gradient(135deg, #eef2ff, #f8fafc); }
+.privacy svg, .welcome-art, output { color: #2563eb; }
+.eyebrow { color: #4f46e5; }
+.session-badge, .pill { color: #475569; }
+.welcome { border-color: #c7d2fe; background: radial-gradient(ellipse at 90% 80%, #dbeafe, transparent 65%), linear-gradient(110deg, #eef2ff, #ffffff); }
+.btn { border-color: #cbd5e1; color: #1e293b; background: #ffffff; }
+.btn:hover:not(:disabled) { background: #f1f5f9; }
+.btn.primary { background: #4f46e5; border-color: #6366f1; color: #ffffff; box-shadow: 0 4px 20px #4f46e538; }
+.btn.primary:hover:not(:disabled) { background: #6366f1; }
+.link { color: #4338ca; }
+.card, .kpi { background: #ffffff; }
+.field { color: #64748b; }
+input:not([type="range"]):not([type="checkbox"]):not([type="file"]), select { background: #f8fafc; color: #1f2937; border-color: #cbd5e1; }
+input[type="range"], input[type="checkbox"] { accent-color: #4f46e5; }
+.avatar { background: #eef2ff; border-color: #c7d2fe; }
+.upload-icon { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.meter { background: #e2e8f0; }
+.notice, .alert { border-color: #bfdbfe; background: #eff6ff; color: #1e3a8a; }
+.empty { background: #ffffff; border-color: #cbd5e1; }
+.empty svg, .report svg { color: #4f46e5; }
+.conversation p { color: #334155; }
+.report { background: #ffffff; border-color: #dbe3ef; color: #1e293b; }
+.report:hover { border-color: #4f46e5; }
+footer { color: #64748b; }
