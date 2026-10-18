@@ -4,14 +4,14 @@
     Segoe UI,
     system-ui,
     sans-serif;
-  color: #edf2ff;
-  background: #0b1120;
+  color: #f7f1e8;
+  background: #171513;
   font-synthesis: none;
   color-scheme: dark;
-  --muted: #a6b4cb;
-  --line: #29364c;
-  --cyan: #22d3ee;
-  --primary: #6366f1;
+  --muted: #b9aea1;
+  --line: #3b342e;
+  --cyan: #efb15b;
+  --primary: #d97858;
 }
 * {
   box-sizing: border-box;
@@ -48,7 +48,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid #22d3ee;
+  outline: 2px solid #efb15b;
 }
 h1,
 h2,
@@ -84,7 +84,7 @@ small {
   position: sticky;
   top: 0;
   padding: 32px 20px 22px;
-  background: #0d1526;
+  background: #1d1a18;
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -101,9 +101,9 @@ small {
 .brand b {
   font-size: 12px;
   padding: 3px 6px;
-  background: #303264;
+  background: #493125;
   border-radius: 5px;
-  color: #b5b7ff;
+  color: #f2bd79;
 }
 .brand small {
   font-size: 8px;
@@ -115,7 +115,7 @@ small {
   width: 38px;
   height: 42px;
   border-radius: 12px;
-  background: #6366f1;
+  background: #d97858;
   display: grid;
   place-items: center;
 }
@@ -138,27 +138,27 @@ nav button {
   padding: 13px 15px;
   border-radius: 8px;
   background: transparent;
-  color: #b1bed2;
+  color: #c9beb1;
   text-align: left;
   font-size: 13px;
 }
 nav button.active {
-  background: #25274e;
-  color: #c8caff;
-  box-shadow: inset 3px 0 #818cf8;
+  background: #493126;
+  color: #ffe0b0;
+  box-shadow: inset 3px 0 #efb15b;
 }
 nav button:hover {
-  background: #1c2942;
+  background: #302722;
 }
 .privacy {
   margin-top: auto;
-  background: linear-gradient(135deg, #1b2b42, #131d31);
+  background: linear-gradient(135deg, #332921, #211d1a);
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 12px;
 }
 .privacy svg {
-  color: #22d3ee;
+  color: #efb15b;
 }
 .privacy strong {
   display: block;
@@ -208,7 +208,7 @@ header p {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: #b3b6f4;
+  color: #e3a568;
   margin-bottom: 13px;
 }
 .session-badge,
@@ -218,7 +218,7 @@ header p {
   padding: 8px 12px;
   border-radius: 20px;
   white-space: nowrap;
-  color: #c3cde1;
+  color: #d8cabb;
 }
 .dot {
   display: inline-block;
@@ -232,11 +232,11 @@ header p {
   position: relative;
   overflow: hidden;
   padding: 30px 34px;
-  border: 1px solid #3a3c66;
+  border: 1px solid #5a3f2d;
   border-radius: 16px;
   background:
-    radial-gradient(ellipse at 90% 80%, #263b63, transparent 65%),
-    linear-gradient(110deg, #22234b, #172238);
+    radial-gradient(ellipse at 90% 80%, #5a3928, transparent 65%),
+    linear-gradient(110deg, #3b2922, #211d1a);
 }
 .welcome h2 {
   font-size: 30px;
@@ -253,7 +253,7 @@ header p {
   height: 180px;
   right: 6%;
   top: 35px;
-  color: #22d3ee;
+  color: #efb15b;
   opacity: 0.23;
   stroke-width: 0.6;
 }
@@ -266,9 +266,9 @@ header p {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #3b4962;
-  color: #eaf0ff;
-  background: #202d44;
+  border: 1px solid #5a4738;
+  color: #f7f1e8;
+  background: #302822;
   border-radius: 8px;
   padding: 11px 16px;
   font-size: 12px;
@@ -278,22 +278,22 @@ header p {
   transition: background 0.2s;
 }
 .btn:hover:not(:disabled) {
-  background: #334361;
+  background: #49382d;
 }
 .btn.primary {
-  background: #6366f1;
-  border-color: #818cf8;
-  box-shadow: 0 4px 20px #6366f124;
+  background: #d97858;
+  border-color: #efaa79;
+  box-shadow: 0 4px 20px #d9785838;
   color: white;
 }
 .btn.primary:hover:not(:disabled) {
-  background: #777aff;
+  background: #ed9671;
 }
 .btn.stop {
-  background: #b92543;
+  background: #a94f4f;
 }
 .btn.rec {
-  color: #fecaca;
+  color: #ffd2c4;
 }
 .link {
   display: inline-flex;
@@ -301,12 +301,12 @@ header p {
   align-items: center;
   border: 0;
   background: none;
-  color: #b6baff;
+  color: #efb875;
   font-size: 12px;
   padding: 4px;
 }
 .card {
-  background: #172238;
+  background: #211e1b;
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 24px;
@@ -322,7 +322,7 @@ header p {
 }
 .kpi {
   border: 1px solid var(--line);
-  background: #172238;
+  background: #211e1b;
   padding: 20px;
   border-radius: 12px;
 }
@@ -355,23 +355,23 @@ header p {
   flex-direction: column;
   gap: 9px;
   font-size: 12px;
-  color: #b8c5da;
+  color: #cbbcaf;
 }
 input:not([type="range"]):not([type="checkbox"]):not([type="file"]),
 select {
-  background: #0e182a;
-  color: #edf2ff;
-  border: 1px solid #384962;
+  background: #141210;
+  color: #f7f1e8;
+  border: 1px solid #55483d;
   border-radius: 8px;
   padding: 12px;
   width: 100%;
 }
 input[type="range"] {
   width: 100%;
-  accent-color: #818cf8;
+  accent-color: #efb15b;
 }
 input[type="checkbox"] {
-  accent-color: #818cf8;
+  accent-color: #efb15b;
 }
 .settings-grid {
   display: grid;
@@ -408,8 +408,8 @@ input[type="checkbox"] {
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  background: #303a59;
-  border: 1px solid #49567a;
+  background: #4a3428;
+  border: 1px solid #76533a;
   border-radius: 14px;
   font-size: 20px;
   font-weight: 700;
@@ -427,9 +427,9 @@ input[type="checkbox"] {
   padding: 38px;
 }
 .upload-icon {
-  background: #2b2d58;
-  color: #a3a6ff;
-  border: 1px solid #4c4d81;
+  background: #493126;
+  color: #f0b66d;
+  border: 1px solid #76503a;
   padding: 20px;
   border-radius: 18px;
 }
@@ -457,7 +457,7 @@ input[type="checkbox"] {
 }
 .meter {
   height: 7px;
-  background: #263651;
+  background: #3a3029;
   border-radius: 5px;
   overflow: hidden;
 }
@@ -469,8 +469,8 @@ input[type="checkbox"] {
 .alert {
   padding: 13px 17px;
   border-radius: 9px;
-  border: 1px solid #3d537d;
-  background: #1b2b47;
+  border: 1px solid #66503d;
+  background: #2b241f;
   font-size: 12px;
   line-height: 1.6;
   display: flex;
@@ -497,7 +497,7 @@ input[type="checkbox"] {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #303e54;
+  background: #4b4037;
 }
 .traffic .green {
   background: #34d399;
@@ -517,8 +517,8 @@ input[type="checkbox"] {
 .empty {
   text-align: center;
   padding: 54px 25px;
-  background: #101b2e;
-  border: 1px dashed #34445f;
+  background: #1c1917;
+  border: 1px dashed #56473a;
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -526,7 +526,7 @@ input[type="checkbox"] {
   gap: 16px;
 }
 .empty svg {
-  color: #818cf8;
+  color: #efb15b;
 }
 .empty p {
   max-width: 480px;
@@ -548,7 +548,7 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  color: #a6b4cb;
+  color: #b9aea1;
   padding: 5px 0;
 }
 .spectrogram canvas {
@@ -562,7 +562,7 @@ input[type="checkbox"] {
 }
 output {
   font-size: 12px;
-  color: #22d3ee;
+  color: #efb15b;
 }
 .conversation {
   display: flex;
@@ -579,7 +579,7 @@ output {
   margin-left: 15px;
 }
 .conversation p {
-  color: #e0e7f5;
+  color: #f0e8dc;
   margin: 12px 0;
   overflow-wrap: anywhere;
 }
@@ -631,18 +631,18 @@ th {
   flex-direction: column;
   gap: 16px;
   align-items: flex-start;
-  background: #111d32;
-  border: 1px solid #354362;
+  background: #1d1917;
+  border: 1px solid #4e4035;
   padding: 22px;
   border-radius: 12px;
-  color: #eaf0ff;
+  color: #f7f1e8;
   text-align: left;
 }
 .report:hover {
-  border-color: #818cf8;
+  border-color: #efb15b;
 }
 .report svg {
-  color: #818cf8;
+  color: #efb15b;
 }
 .report span {
   font-size: 11px;
@@ -651,7 +651,7 @@ th {
 footer {
   display: flex;
   justify-content: space-between;
-  color: #97a6c0;
+  color: #9f9286;
   font-size: 10px;
   border-top: 1px solid var(--line);
   padding-top: 22px;
