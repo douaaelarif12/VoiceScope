@@ -870,3 +870,45 @@ header p { color: #777b95; }
 .report-grid { gap: 18px; }
 .report { border-radius: 17px; }
 footer { border-color: #e8e3f3; }
+
+/* Motion language: calm, audio-inspired, and never distracting. */
+@keyframes voice-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 24px #ef725855; }
+  50% { transform: scale(1.07); box-shadow: 0 10px 32px #ef725877; }
+}
+@keyframes hero-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-7deg); }
+  50% { transform: translate3d(-10px, -8px, 0) rotate(-3deg); }
+}
+@keyframes hero-glow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes status-breathe {
+  0%, 100% { opacity: .65; transform: scale(.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.brand-icon { animation: voice-pulse 3.2s ease-in-out infinite; }
+.welcome { background-size: 180% 180%; animation: hero-glow 12s ease-in-out infinite; }
+.welcome-art { animation: hero-drift 7s ease-in-out infinite; }
+main > header, main > .welcome, main > .card, main > .kpis, main > .two-col, main > .profile-grid, main > .empty {
+  animation: card-enter .55s ease both;
+}
+main > *:nth-child(2) { animation-delay: .05s; }
+main > *:nth-child(3) { animation-delay: .1s; }
+main > *:nth-child(4) { animation-delay: .15s; }
+.connection i.online, .dot { animation: status-breathe 2.4s ease-in-out infinite; }
+.upload-icon { animation: voice-pulse 3.8s ease-in-out infinite; }
+nav button { transition: transform .2s ease, background .2s ease, color .2s ease; }
+nav button:hover { transform: translateX(4px); }
+.btn, .report, .profile { transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .brand-icon, .welcome, .welcome-art, .upload-icon, .connection i.online, .dot,
+  main > header, main > .welcome, main > .card, main > .kpis, main > .two-col,
+  main > .profile-grid, main > .empty { animation: none; }
+  nav button, .btn, .report, .profile { transition: none; }
+}
