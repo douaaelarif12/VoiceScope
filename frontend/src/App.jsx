@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import AudioInput from "./AudioInput.jsx";
 import { api } from "./api.js";
-import { createWorker } from "tesseract.js";
 
 const visual = (name) => {
   const View = lazy(() =>
@@ -82,9 +81,6 @@ export default function App() {
   const [scheduleDraft, setScheduleDraft] = useState({
     professeur: "", classe: "", matiere: "", salle: "", semestre: "Semestre 1", semaine: "Toutes", jour: "Lundi", debut: "08:00", fin: "09:00",
   });
-  const [scheduleImage, setScheduleImage] = useState(null),
-    [ocrText, setOcrText] = useState(""),
-    [ocrBusy, setOcrBusy] = useState(false);
   const [options, setOptions] = useState(() => {
     try {
       return {
@@ -162,27 +158,6 @@ export default function App() {
     if (!scheduleDraft.professeur.trim() || !scheduleDraft.classe.trim() || !scheduleDraft.matiere.trim()) return;
     setSchedule([...schedule, { ...scheduleDraft, id: crypto.randomUUID() }]);
     setScheduleDraft({ ...scheduleDraft, professeur: "", classe: "", matiere: "", salle: "" });
-  };
-  const readScheduleImage = async (file) => {
-    if (!file || file.size > 8 * 1024 * 1024) {
-      setNotice({ error: true, text: "Image trop volumineuse (8 Mio maximum)." });
-      return;
-    }
-    setScheduleImage(URL.createObjectURL(file));
-    setOcrBusy(true);
-    setOcrText("");
-    let worker;
-    try {
-      worker = await createWorker("fra+eng");
-      const { data } = await worker.recognize(file);
-      setOcrText(data.text.trim());
-      setNotice({ text: "Texte détecté. Vérifie les séances avant de les enregistrer." });
-    } catch (e) {
-      setNotice({ error: true, text: "Lecture OCR indisponible. Tu peux ajouter les séances manuellement." });
-    } finally {
-      await worker?.terminate();
-      setOcrBusy(false);
-    }
   };
   const a = result?.acoustics,
     frame = result?.niveaux[selected];
@@ -383,13 +358,6 @@ export default function App() {
             <section className="card">
               <h2>Ajouter une séance à l’emploi du temps</h2>
               <p className="hint">Ces informations sont facultatives et restent dans votre navigateur.</p>
-              <label className="btn file-label schedule-image-input">
-                Importer une image de l’emploi du temps
-                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const f = e.target.files[0]; e.target.value = ""; readScheduleImage(f); }} />
-              </label>
-              {scheduleImage && <img className="schedule-image" src={scheduleImage} alt="Emploi du temps importé" />}
-              {ocrBusy && <p className="hint" role="status">Lecture de l’image en cours…</p>}
-              {ocrText && <label className="field">Texte détecté à vérifier<textarea className="ocr-text" value={ocrText} readOnly /></label>}
               <div className="settings-grid">
                 {[["professeur", "Professeur"], ["classe", "Classe"], ["matiere", "Matière"], ["salle", "Salle"]].map(([key, label]) => (
                   <label className="field" key={key}>{label}
