@@ -55,17 +55,24 @@ def identify(wav, cents, threshold, margin):
     if len(wav) >= 48000:
         vectors += [embed(part) for part in np.array_split(wav, len(wav)//24000)]
     all_scores = [{n: float(np.clip(np.dot(v,c), -1,1)) for n,c in cents.items()} for v in vectors]
-    # With one enrolled speaker there is no competing profile, so a noisy
-    # microphone should not turn a clearly isolated voice into "Inconnu".
-    # Keep a floor to avoid accepting arbitrary VAD speech as that profile.
-    effective_threshold = max(.65, threshold - .07) if len(cents) == 1 else threshold
-    who, reason = decision(all_scores[0], effective_threshold, margin)
+    # A noisy tail should not veto the complete utterance. Average the cosine
+    # scores across independent windows, then require only a majority vote for
+    # consistency. This is more robust for one person speaking near a laptop mic.
+    effective_threshold = max(.62, threshold - .10)
+    mean_scores = {name: float(np.mean([scores[name] for scores in all_scores])) for name in cents}
+    who, reason = decision(mean_scores, effective_threshold, margin)
     local = [decision(s, effective_threshold, margin)[0] for s in all_scores[1:]]
-    if local and any(n != who for n in local):
-        who, reason = "Indéterminé", "attribution instable ou plusieurs voix possibles"
+    if local and who not in ("Inconnu", "Indéterminé"):
+        agreement = sum(n == who for n in local) / len(local)
+        strong_conflict = any(
+            n != who and max(scores.values()) >= effective_threshold + .10
+            for n, scores in zip(local, all_scores[1:])
+        )
+        if agreement < .5 or strong_conflict:
+            who, reason = "Indéterminé", "attribution instable ou plusieurs voix possibles"
     elif not local and reason is None:
         reason = "segment court : chevauchement non vérifiable"
-    return {"locuteur": who, "raison": reason, "scores": all_scores[0]}
+    return {"locuteur": who, "raison": reason, "scores": mean_scores}
 
 
 class ProfileStore:
