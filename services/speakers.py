@@ -1,4 +1,4 @@
-"""Resemblyzer profiles and conservative cosine decisions."""
+"""Resemblyzer profiles and closest-match cosine decisions."""
 import json
 import os
 import threading
@@ -33,44 +33,60 @@ def embed(wav):
         v = get_encoder().embed_utterance(speech)
         return v / max(np.linalg.norm(v), 1e-9)
 
+def embed_samples(wav):
+    if len(wav) < 48000:
+        raise ValueError("Au moins 3 secondes de parole requises ; enregistrez 10 à 15 secondes.")
+    window = 3 * 16000
+    return [embed(wav[start:start + window]) for start in range(0, len(wav) - window + 1, window)]
+
 
 def decision(scores, threshold=.75, margin=.05):
     ranked = sorted((scores or {}).items(), key=lambda x: x[1], reverse=True)
-    if not ranked or ranked[0][1] < threshold:
+    if not ranked:
         return "Inconnu", "similarité insuffisante"
+    if ranked[0][1] < threshold:
+        return ranked[0][0], "similarité faible : personne la plus proche retenue"
     if len(ranked)>1 and ranked[0][1]-ranked[1][1] < margin:
-        return "Indéterminé", "profils trop proches"
+        return ranked[0][0], "scores proches : personne au score le plus élevé retenue"
     return ranked[0][0], None
 
 
-def identify(wav, cents, threshold, margin):
-    if not cents:
+def _profile_scores(vector, profiles):
+    scores = {}
+    for name, profile in profiles.items():
+        samples = np.asarray(profile, dtype=float)
+        if samples.ndim == 1:
+            samples = samples.reshape(1, -1)
+        samples = samples / np.maximum(np.linalg.norm(samples, axis=1, keepdims=True), 1e-9)
+        similarities = samples @ vector
+        nearest = float(np.max(similarities))
+        centroid = samples.mean(axis=0)
+        centroid /= max(np.linalg.norm(centroid), 1e-9)
+        scores[name] = float(.7 * nearest + .3 * np.dot(centroid, vector))
+    return scores
+
+
+def identify(wav, profiles, threshold, margin):
+    if not profiles:
         return {"locuteur": "Inconnu", "raison": "aucun profil", "scores": None}
-    # Never expand a clip into neighbouring speech. Compare subwindows as well.
-    if len(wav) < 16000:
-        return {"locuteur": "Indéterminé", "raison": "segment inférieur à 1 seconde", "scores": None}
+    # Resemblyzer needs at least half a second; never invent a match below that.
+    if len(wav) < 8000:
+        return {"locuteur": "Inconnu", "raison": "parole insuffisante pour comparer les profils", "scores": None}
     vectors = [embed(wav)]
     # Need two complete, independent 1.5s windows before checking consistency.
     # Short padded tails yield unreliable embeddings and must not veto a whole clip.
     if len(wav) >= 48000:
         vectors += [embed(part) for part in np.array_split(wav, len(wav)//24000)]
-    all_scores = [{n: float(np.clip(np.dot(v,c), -1,1)) for n,c in cents.items()} for v in vectors]
-    # A noisy tail should not veto the complete utterance. Average the cosine
-    # scores across independent windows, then require only a majority vote for
-    # consistency. This is more robust for one person speaking near a laptop mic.
+    all_scores = [_profile_scores(v, profiles) for v in vectors]
     effective_threshold = max(.62, threshold - .10)
-    mean_scores = {name: float(np.mean([scores[name] for scores in all_scores])) for name in cents}
+    mean_scores = {name: float(np.mean([scores[name] for scores in all_scores])) for name in profiles}
     who, reason = decision(mean_scores, effective_threshold, margin)
     local = [decision(s, effective_threshold, margin)[0] for s in all_scores[1:]]
-    if local and who not in ("Inconnu", "Indéterminé"):
+    if local:
         agreement = sum(n == who for n in local) / len(local)
-        strong_conflict = any(
-            n != who and max(scores.values()) >= effective_threshold + .10
-            for n, scores in zip(local, all_scores[1:])
-        )
-        if agreement < .5 or strong_conflict:
-            who, reason = "Indéterminé", "attribution instable ou plusieurs voix possibles"
-    elif not local and reason is None:
+        if agreement < 1 and reason is None:
+            reason = "voix variables : personne au score moyen le plus élevé retenue"
+    elif reason is None:
         reason = "segment court : chevauchement non vérifiable"
     return {"locuteur": who, "raison": reason, "scores": mean_scores}
 
@@ -137,4 +153,12 @@ class ProfileStore:
                 a /= np.linalg.norm(a,axis=1,keepdims=True)
                 mean = a.mean(axis=0)
                 result[n] = mean / max(np.linalg.norm(mean),1e-9)
+            return result
+
+    def templates(self):
+        with self.lock:
+            result = {}
+            for name, value in self.voices.items():
+                samples = np.asarray(value["echantillons"], dtype=float)
+                result[name] = samples / np.maximum(np.linalg.norm(samples, axis=1, keepdims=True), 1e-9)
             return result

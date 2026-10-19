@@ -16,7 +16,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import ValidationError
 from schemas import AnalysisOptions, AnalysisResult, Profile
 from services.acoustics import MAX_BYTES, read_wav
-from services.speakers import ProfileStore, embed
+from services.speakers import ProfileStore, embed_samples
 from services.pipeline import analyse
 from services.body_limit import BodyLimitMiddleware
 from services.vad import speech_regions
@@ -99,10 +99,8 @@ def ajouter(nom: str=Form(...),audio: UploadFile=File(...)):
     try:
         regions, _ = speech_regions(wav)
         speech = np.concatenate([wav[int(a*16000):int(b*16000)] for a,b in regions]) if regions else np.array([],dtype=np.float32)
-        if len(speech)<48000:
-            raise ValueError("Au moins 3 secondes de parole requises ; enregistrez 10 à 15 secondes.")
-        vector = embed(speech)
-        store.merge({nom:{"echantillons":[vector.tolist()]}})
+        vectors = embed_samples(speech)
+        store.merge({nom:{"echantillons":[vector.tolist() for vector in vectors]}})
     except ValueError as exc:
         raise HTTPException(400,str(exc)) from exc
     except Exception as exc:

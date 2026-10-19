@@ -27,6 +27,27 @@ export function encodeWav(samples, rate = RATE) {
   return new Blob([buf], { type: "audio/wav" });
 }
 
+export async function samplesToWav16k(samples, sourceRate) {
+  if (!samples.length || !Number.isFinite(sourceRate) || sourceRate <= 0) {
+    throw new Error("Aucun audio exploitable.");
+  }
+  if (samples.length / sourceRate > 300) {
+    throw new Error("Durée limitée à 5 minutes.");
+  }
+  const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!Offline) throw new Error("Conversion audio indisponible dans ce navigateur.");
+  const length = Math.max(Math.ceil((samples.length * RATE) / sourceRate), 1);
+  const off = new Offline(1, length, RATE);
+  const buffer = off.createBuffer(1, samples.length, sourceRate);
+  buffer.getChannelData(0).set(samples);
+  const src = off.createBufferSource();
+  src.buffer = buffer;
+  src.connect(off.destination);
+  src.start();
+  const rendered = await off.startRendering();
+  return encodeWav(rendered.getChannelData(0), RATE);
+}
+
 /** Décode n'importe quel audio du navigateur (webm, mp3, wav, m4a...) en WAV mono 16 kHz. */
 export async function toWav16k(blob) {
   if (blob.size > 32 * 1024 * 1024) throw new Error("Fichier limité à 32 Mio.");
@@ -39,9 +60,11 @@ export async function toWav16k(blob) {
   } finally {
     ctx.close();
   }
-  const length = Math.max(Math.ceil(decoded.duration * RATE), 1);
   if (decoded.duration > 300) throw new Error("Durée limitée à 5 minutes.");
-  const off = new OfflineAudioContext(1, length, RATE);
+  const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!Offline) throw new Error("Conversion audio indisponible dans ce navigateur.");
+  const length = Math.max(Math.ceil(decoded.duration * RATE), 1);
+  const off = new Offline(1, length, RATE);
   const src = off.createBufferSource();
   src.buffer = decoded;
   src.connect(off.destination);

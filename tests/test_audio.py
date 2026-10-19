@@ -50,8 +50,10 @@ def test_alerts_consecutive_and_final_partial():
     assert alerts(levels,high=-20,sustain=4)==[]
 
 def test_unknown_ambiguous():
-    assert decision({"A":.4})[0]=="Inconnu"
-    assert decision({"A":.8,"B":.79})[0]=="Indéterminé"
+    assert decision({"A":.4})[0]=="A"
+    assert decision({"A":.8,"B":.79})[0]=="A"
+    assert decision({"A":.4})[1]
+    assert decision({"A":.8,"B":.79})[1]
     assert decision({"A":.9,"B":.7})[0]=="A"
     assert decision({})[0]=="Inconnu"
 
@@ -60,7 +62,8 @@ def test_mixed_voice(monkeypatch):
     vectors=iter([np.array([1.,0.]),np.array([1.,0.]),np.array([0.,1.]),np.array([0.,1.])])
     monkeypatch.setattr(speakers,"embed",lambda wav:next(vectors))
     r=identify(np.ones(48000),{"A":np.array([1.,0.]),"B":np.array([0.,1.])},.75,.05)
-    assert r["locuteur"]=="Indéterminé"
+    assert r["locuteur"]=="A"
+    assert r["raison"]
 
 def test_consistency_uses_complete_windows(monkeypatch):
     from services import speakers
@@ -75,6 +78,31 @@ def test_consistency_uses_complete_windows(monkeypatch):
     short=identify(np.ones(32000),{"A":np.array([1.,0.])},.75,.05)
     assert short["locuteur"]=='A'
     assert 'chevauchement' in short['raison']
+
+def test_short_valid_clip_still_gets_closest_profile(monkeypatch):
+    from services import speakers
+    monkeypatch.setattr(speakers,"embed",lambda wav:np.array([0.,1.]))
+    result=identify(np.ones(8000),{"A":np.array([1.,0.]),"B":np.array([0.,1.])},.75,.05)
+    assert result["locuteur"]=="B"
+
+def test_enrollment_keeps_independent_voice_windows(monkeypatch):
+    from services import speakers
+    lengths=[]
+    monkeypatch.setattr(speakers,"embed",lambda wav:(lengths.append(len(wav)) or np.array([1.,0.])))
+    samples=speakers.embed_samples(np.ones(10*16000))
+    assert lengths==[48000,48000,48000]
+    assert len(samples)==3
+
+def test_multiple_profile_samples_handle_voice_variation(monkeypatch):
+    from services import speakers
+    monkeypatch.setattr(speakers,"embed",lambda wav:np.array([1.,0.]))
+    profiles={
+        "A":np.array([[1.,0.],[0.,1.]]),
+        "B":np.array([[.7,np.sqrt(1-.7**2)]]),
+    }
+    result=identify(np.ones(32000),profiles,.75,.05)
+    assert result["locuteur"]=="A"
+    assert result["scores"]["A"]>result["scores"]["B"]
 
 def test_profiles_atomic_validation(tmp_path):
     store=ProfileStore(tmp_path/"voices.json")

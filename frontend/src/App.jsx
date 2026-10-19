@@ -169,7 +169,7 @@ export default function App() {
         : "green"
     : "off";
   const dominantSpeaker = result?.statistics
-    .filter((s) => !["Inconnu", "Indéterminé"].includes(s.nom))
+    .filter((s) => s.nom !== "Inconnu")
     .sort((x, y) => y.secondes - x.secondes)[0]?.nom;
   const noiseLeader = result?.locuteur_bruit_principal;
   const empty = (
@@ -224,8 +224,8 @@ export default function App() {
           </select>
         </label>
         {Object.entries({
-          seuil: ["Similarité cosinus minimale", 0, 1, 0.01],
-          ecart: ["Marge entre les deux profils", 0, 1, 0.01],
+          seuil: ["Seuil d'alerte de similarité", 0, 1, 0.01],
+          ecart: ["Marge d'alerte entre profils", 0, 1, 0.01],
           fenetre: ["Fenêtre vocale (secondes)", 1, 10, 0.5],
           sound_threshold: ["Score YAMNet minimal", 0, 1, 0.05],
           moderate_dbfs: ["Seuil orange (dBFS)", -120, 0, 1],
@@ -417,7 +417,7 @@ export default function App() {
                     {p.nom[0].toUpperCase()}
                   </span>
                   <h2>{p.nom}</h2>
-                  <p>{p.echantillons} échantillon(s)</p>
+                  <p>{p.echantillons} empreinte(s) vocales</p>
                   <button className="btn" onClick={() => setName(p.nom)}>
                     Ajouter un échantillon
                   </button>
@@ -442,7 +442,9 @@ export default function App() {
               <h2>Enregistrer un profil vocal</h2>
               <p className="hint">
                 Avec l'accord de la personne, enregistrez 10 à 15 secondes de
-                parole seule et claire. Répétez avec des phrases différentes.
+                parole seule et claire. Une empreinte est calculée par tranche
+                complète de 3 secondes. Ajoutez plusieurs prises avec des
+                phrases différentes.
               </p>
               <label className="field">
                 Nom

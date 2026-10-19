@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toWav16k } from "./audio.js";
+import { samplesToWav16k, toWav16k } from "./audio.js";
 
 export default function AudioInput({ value, onChange, compact = false }) {
   const [enCours, setEnCours] = useState(false);
@@ -17,10 +17,6 @@ export default function AudioInput({ value, onChange, compact = false }) {
   useEffect(() => () => url && URL.revokeObjectURL(url), [url]);
   useEffect(
     () => () => {
-      if (r.current.mr) {
-        r.current.mr.onstop = null;
-        if (r.current.mr.state !== "inactive") r.current.mr.stop();
-      }
       arreterTout();
     },
     [],
@@ -31,6 +27,10 @@ export default function AudioInput({ value, onChange, compact = false }) {
     cancelAnimationFrame(s.raf);
     clearInterval(s.timer);
     clearTimeout(s.limit);
+    if (s.processor) {
+      s.processor.onaudioprocess = null;
+      s.processor.disconnect();
+    }
     s.ac && s.ac.state !== "closed" && s.ac.close();
     s.stream && s.stream.getTracks().forEach((t) => t.stop());
   }
@@ -52,25 +52,23 @@ export default function AudioInput({ value, onChange, compact = false }) {
         },
       });
       r.current.stream = stream;
-      const mr = new MediaRecorder(stream);
-      const morceaux = [];
-      mr.ondataavailable = (e) => e.data.size && morceaux.push(e.data);
-      mr.onstop = async () => {
-        arreterTout();
-        setOccupe(true);
-        try {
-          onChange(await toWav16k(new Blob(morceaux, { type: mr.mimeType })));
-        } catch (e) {
-          setErreur("Impossible de lire l'enregistrement : " + e.message);
-        } finally {
-          setOccupe(false);
-        }
-      };
       const ac = new (window.AudioContext || window.webkitAudioContext)();
       r.current.ac = ac;
+      await ac.resume();
+      const chunks = [];
+      const processor = ac.createScriptProcessor(4096, 1, 1);
       const an = ac.createAnalyser();
       an.fftSize = 1024;
-      ac.createMediaStreamSource(stream).connect(an);
+      const source = ac.createMediaStreamSource(stream);
+      source.connect(an);
+      source.connect(processor);
+      const silence = ac.createGain();
+      silence.gain.value = 0;
+      processor.connect(silence);
+      silence.connect(ac.destination);
+      processor.onaudioprocess = (event) => {
+        chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+      };
       const buf = new Uint8Array(an.fftSize);
       const tick = () => {
         an.getByteTimeDomainData(buf);
@@ -85,11 +83,11 @@ export default function AudioInput({ value, onChange, compact = false }) {
         ...r.current,
         stream,
         ac,
-        mr,
+        processor,
+        chunks,
         timer: setInterval(() => setSecondes((s) => s + 1), 1000),
         limit: setTimeout(arreter, 299000),
       };
-      mr.start();
       setEnCours(true);
       onChange(null);
     } catch (e) {
@@ -105,7 +103,25 @@ export default function AudioInput({ value, onChange, compact = false }) {
   function arreter() {
     setEnCours(false);
     setNiveau(0);
-    r.current.mr && r.current.mr.state !== "inactive" && r.current.mr.stop();
+    const { ac, chunks = [] } = r.current;
+    if (!ac) return;
+    const sampleRate = ac.sampleRate;
+    const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+    const samples = new Float32Array(length);
+    let offset = 0;
+    for (const chunk of chunks) {
+      samples.set(chunk, offset);
+      offset += chunk.length;
+    }
+    arreterTout();
+    setOccupe(true);
+    samplesToWav16k(samples, sampleRate)
+      .then(onChange)
+      .catch((e) => setErreur("Impossible de lire l'enregistrement : " + e.message))
+      .finally(() => {
+        setOccupe(false);
+        r.current = {};
+      });
   }
 
   async function choisir(e) {

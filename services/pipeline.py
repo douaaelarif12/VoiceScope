@@ -23,15 +23,15 @@ def analyse(wav, store, options):
             )
         except Exception:
             warnings.append("Transcription indisponible : vérifier faster-whisper et le téléchargement du modèle.")
-    cents = store.centroids()
+    profiles = store.templates()
     rows = []
     for a,b in regions:
         for start in range(int(a*SR), int(b*SR), int(options.fenetre*SR)):
             end = min(start+int(options.fenetre*SR),int(b*SR))
             try:
-                identity = speakers.identify(wav[start:end], cents, options.seuil, options.ecart)
+                identity = speakers.identify(wav[start:end], profiles, options.seuil, options.ecart)
             except Exception:
-                identity = {"locuteur":"Indéterminé", "raison":"modèle vocal indisponible ou parole insuffisante", "scores":None}
+                identity = {"locuteur":"Inconnu", "raison":"modèle vocal indisponible ou parole insuffisante", "scores":None}
                 if "Reconnaissance vocale partiellement indisponible." not in warnings:
                     warnings.append("Reconnaissance vocale partiellement indisponible.")
             rows.append({"debut":start/SR,"fin":end/SR,"texte":"", "dbfs":dbfs(wav[start:end]), **identity})
@@ -39,12 +39,32 @@ def analyse(wav, store, options):
         item["debut"] = max(0.,min(duration,item["debut"]))
         item["fin"] = max(item["debut"],min(duration,item["fin"]))
         overlaps = [r for r in rows if r["fin"]>item["debut"] and r["debut"]<item["fin"]]
-        names = {r["locuteur"] for r in overlaps}
-        coverage = sum(max(0,min(r["fin"],item["fin"])-max(r["debut"],item["debut"])) for r in overlaps)
-        stable = len(names)==1 and coverage >= .5*(item["fin"]-item["debut"])
-        item["locuteur"] = next(iter(names)) if stable else "Indéterminé"
-        item["raison"] = ("attribution estimée : chevauchement non vérifiable sur les segments courts" if any(r["raison"] for r in overlaps) else None) if stable and item["locuteur"] not in ("Inconnu","Indéterminé") else "attribution incertaine, parole mixte ou insuffisante"
-        item["scores"] = overlaps[0]["scores"] if stable and len(overlaps)==1 else None
+        weighted_scores, score_weights, durations = defaultdict(float), defaultdict(float), defaultdict(float)
+        for row in overlaps:
+            duration = max(0., min(row["fin"], item["fin"]) - max(row["debut"], item["debut"]))
+            durations[row["locuteur"]] += duration
+            for name, score in (row["scores"] or {}).items():
+                weighted_scores[name] += duration * score
+                score_weights[name] += duration
+        item["scores"] = {
+            name: weighted_scores[name] / score_weights[name]
+            for name in weighted_scores if score_weights[name]
+        } or None
+        if item["scores"]:
+            item["locuteur"] = max(item["scores"], key=item["scores"].get)
+            if len(item["scores"]) > 1:
+                item["raison"] = "personne au score moyen le plus élevé retenue pour la phrase"
+            else:
+                item["raison"] = next(
+                    (row["raison"] for row in overlaps if row["locuteur"] == item["locuteur"] and row["raison"]),
+                    None,
+                )
+        elif durations:
+            item["locuteur"] = max(durations, key=durations.get)
+            item["raison"] = "segment vocal le plus long retenu pour la phrase"
+        else:
+            item["locuteur"] = "Inconnu"
+            item["raison"] = "aucun profil vocal disponible pour attribuer la phrase"
         item["dbfs"] = dbfs(wav[int(item["debut"]*SR):int(item["fin"]*SR)])
     statistics = defaultdict(lambda:{"secondes":0.,"prises":0,"energie":0.,"pic_dbfs":-120.})
     previous = None
@@ -68,7 +88,7 @@ def analyse(wav, store, options):
                       "niveau_moyen_dbfs":avg_dbfs,
                       "pic_dbfs":value["pic_dbfs"],
                       "part_bruit":100*value["energie"]/total_energy if total_energy else 0})
-    known_stats = [s for s in stats if s["nom"] not in ("Inconnu", "Indéterminé")]
+    known_stats = [s for s in stats if s["nom"] != "Inconnu"]
     bruit_principal = max(known_stats, key=lambda s: s["part_bruit"])["nom"] if known_stats else None
     events, classifier = [], "désactivé"
     if options.classification:

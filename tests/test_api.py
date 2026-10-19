@@ -59,13 +59,14 @@ def test_profiles_import_delete(client):
 
 def test_pipeline_mixed_transcript_and_statistics(client,monkeypatch):
     monkeypatch.setattr(pipeline.vad,'speech_regions',lambda w:([(0.,2.),(2.,4.)],'mock'))
-    monkeypatch.setattr(pipeline.transcription,'transcribe',lambda *a:([{'debut':0.,'fin':4.,'texte':'Bonjour à tous'}],'fr'))
+    monkeypatch.setattr(pipeline.transcription,'transcribe',lambda *a,**k:([{'debut':0.,'fin':4.,'texte':'Bonjour à tous'}],'fr'))
     names=iter(['A','B'])
     monkeypatch.setattr(pipeline.speakers,'identify',lambda *a:{'locuteur':next(names),'raison':None,'scores':{'A':.8,'B':.5}})
     r=client.post('/api/analyse',files={'audio':('x.wav',wav_bytes(np.ones(64000)*.1))},data={'classification':'false'})
     assert r.status_code==200,r.text
     data=r.json()
-    assert data['transcriptions'][0]['locuteur']=='Indéterminé'
+    assert data['transcriptions'][0]['locuteur']=='A'
+    assert data['transcriptions'][0]['scores']=={'A':pytest.approx(.8),'B':pytest.approx(.5)}
     assert sum(s['secondes'] for s in data['statistics'])==4
     assert sum(s['participation'] for s in data['statistics'])==100
 
@@ -94,3 +95,11 @@ def test_enrollment_rejects_non_speech(client,monkeypatch):
     r=client.post('/api/personnes',data={'nom':'A'},files={'audio':('noise.wav',wav_bytes(np.ones(64000)*.1))})
     assert r.status_code==400
     assert client.get('/api/personnes').json()==[]
+
+def test_enrollment_stores_multiple_voice_templates(client,monkeypatch):
+    monkeypatch.setattr(server,'speech_regions',lambda wav:([(0.,10.)],'silero'))
+    monkeypatch.setattr(server,'embed_samples',lambda wav:[np.eye(1,256,0)[0],np.eye(1,256,1)[0],np.eye(1,256,2)[0]])
+    response=client.post('/api/personnes',data={'nom':'A'},files={'audio':('voice.wav',wav_bytes(np.ones(10*16000)*.1))})
+    assert response.status_code==200,response.text
+    assert response.json()['personnes'][0]['echantillons']==3
+    assert len(server.store.voices['A']['echantillons'])==3
