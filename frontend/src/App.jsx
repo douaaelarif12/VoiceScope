@@ -72,7 +72,8 @@ export default function App() {
   const [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(null),
     [history, setHistory] = useState([]),
-    [selected, setSelected] = useState(0);
+    [selected, setSelected] = useState(0),
+    [speakerFilter, setSpeakerFilter] = useState("all");
   const [schedule, setSchedule] = useState(() => {
     try { return JSON.parse(localStorage.getItem("voicescope-schedule") || "[]"); }
     catch { return []; }
@@ -172,6 +173,11 @@ export default function App() {
     .filter((s) => s.nom !== "Inconnu")
     .sort((x, y) => y.secondes - x.secondes)[0]?.nom;
   const noiseLeader = result?.locuteur_bruit_principal;
+  const isUnknownSpeaker = (name) => ["Inconnu", "Indéterminé"].includes(name);
+  const matchesSpeakerFilter = (name) =>
+    speakerFilter === "all" ||
+    (speakerFilter === "unknown" && isUnknownSpeaker(name)) ||
+    (speakerFilter === "known" && !isUnknownSpeaker(name));
   const empty = (
     <div className="empty">
       <AudioLines size={40} />
@@ -634,12 +640,20 @@ export default function App() {
                 Attribution prudente ; une phrase couvrant plusieurs voix reste
                 indéterminée.
               </p>
+              <label className="field compact-field">
+                Afficher
+                <select value={speakerFilter} onChange={(e) => setSpeakerFilter(e.target.value)}>
+                  <option value="all">Tous les locuteurs</option>
+                  <option value="known">Profils connus uniquement</option>
+                  <option value="unknown">Voix inconnues uniquement</option>
+                </select>
+              </label>
               {!result.transcriptions.length && (
                 <p className="empty-text">
                   Aucune transcription disponible pour cette séance.
                 </p>
               )}
-              {result.transcriptions.map((s, i) => (
+              {result.transcriptions.filter((s) => matchesSpeakerFilter(s.locuteur)).map((s, i) => (
                 <article className="conversation" key={i}>
                   <span
                     className="avatar"
@@ -700,8 +714,16 @@ export default function App() {
                     <p className="hint">
                       Estimation basée sur l’énergie des segments attribués à chaque profil vocal.
                     </p>
+                    <label className="field compact-field">
+                      Afficher les statistiques de
+                      <select value={speakerFilter} onChange={(e) => setSpeakerFilter(e.target.value)}>
+                        <option value="all">Tous les locuteurs</option>
+                        <option value="known">Profils connus uniquement</option>
+                        <option value="unknown">Voix inconnues uniquement</option>
+                      </select>
+                    </label>
                     <h2>Temps de parole estimé</h2>
-                    <Participation data={result.statistics} />
+                    <Participation data={result.statistics.filter((s) => matchesSpeakerFilter(s.nom))} />
                     <div className="table-wrap">
                       <table>
                         <thead>
@@ -714,7 +736,7 @@ export default function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {result.statistics.map((s) => (
+                          {result.statistics.filter((s) => matchesSpeakerFilter(s.nom)).map((s) => (
                             <tr key={s.nom}>
                               <td>{s.nom}</td>
                               <td>{number(s.secondes, " s")}</td>
@@ -753,7 +775,7 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {result.segments.map((s, i) => (
+                        {result.segments.filter((s) => matchesSpeakerFilter(s.locuteur)).map((s, i) => (
                           <tr key={i}>
                             <td>
                               {clock(s.debut)} – {clock(s.fin)}
