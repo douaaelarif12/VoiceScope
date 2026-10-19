@@ -3,7 +3,32 @@ import io
 import math
 import numpy as np
 import soundfile as sf
-from scipy.signal import resample_poly, stft, welch
+try:
+    from scipy.signal import resample_poly, stft, welch
+except ImportError:  # Keep the local app usable when the optional SciPy wheel is unavailable.
+    def resample_poly(x, up, down):
+        target = max(1, round(len(x) * up / down))
+        return np.interp(np.linspace(0, len(x) - 1, target), np.arange(len(x)), x)
+
+    def welch(x, rate, nperseg=2048):
+        n = max(1, min(nperseg, len(x)))
+        window = np.hanning(n)
+        segment = np.asarray(x[:n], dtype=float) * window
+        power = np.abs(np.fft.rfft(segment)) ** 2 / max(float(rate) * np.sum(window ** 2), 1e-12)
+        return np.fft.rfftfreq(n, 1 / rate), power
+
+    def stft(x, rate, nperseg=512, noverlap=256):
+        n = max(1, min(nperseg, len(x)))
+        hop = max(1, n - min(noverlap, n - 1))
+        window = np.hanning(n)
+        starts = list(range(0, max(1, len(x) - n + 1), hop)) or [0]
+        columns = []
+        for start in starts:
+            frame = np.asarray(x[start:start + n], dtype=float)
+            if len(frame) < n:
+                frame = np.pad(frame, (0, n - len(frame)))
+            columns.append(np.fft.rfft(frame * window))
+        return np.fft.rfftfreq(n, 1 / rate), np.asarray(starts) / rate, np.asarray(columns).T
 
 SR = 16000
 MAX_BYTES = 32 * 1024 * 1024
